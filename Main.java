@@ -4,12 +4,11 @@ import java.io.*;
 import java.util.*;
 
 public class Main {
-    private int size;
+    private int rows;
+    private int cols;
     private boolean[][] grid;
 
-    public Main(int size) {
-        this.size = size;
-        this.grid = new boolean[size][size];
+    public Main() {
     }
 
     public void loadBoardFromFile(String filePath) {
@@ -20,6 +19,8 @@ public class Main {
         }
 
         List<boolean[]> boardList = new ArrayList<>();
+        int maxCols = 0;
+
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -28,18 +29,27 @@ public class Main {
                     row[i] = line.charAt(i) == '1';
                 }
                 boardList.add(row);
+                maxCols = Math.max(maxCols, line.length()); // Determine the widest row
             }
         } catch (IOException e) {
             System.err.println("Error reading file: " + e.getMessage());
+            return;
         }
 
-        grid = boardList.toArray(new boolean[0][]);
-        this.size = grid.length;
-        System.out.println("Board loaded successfully!");
+        rows = boardList.size();
+        cols = maxCols;
+        grid = new boolean[rows][cols];
+
+        for (int i = 0; i < rows; i++) {
+            boolean[] row = boardList.get(i);
+            System.arraycopy(row, 0, grid[i], 0, row.length);
+        }
+
+        System.out.println("Board loaded successfully! Size: " + rows + "x" + cols);
     }
 
     public void printGrid() {
-        clearConsole(); // Czyszczenie konsoli przed wyświetleniem nowej planszy
+        clearConsole(); // Clear console before printing new grid
         for (boolean[] row : grid) {
             for (boolean cell : row) {
                 System.out.print(cell ? "█ " : ". ");
@@ -56,7 +66,7 @@ public class Main {
             for (int dy : directions) {
                 if (dx == 0 && dy == 0) continue;
                 int nx = x + dx, ny = y + dy;
-                if (nx >= 0 && ny >= 0 && nx < size && ny < size && grid[nx][ny]) {
+                if (nx >= 0 && ny >= 0 && nx < rows && ny < cols && grid[nx][ny]) {
                     count++;
                 }
             }
@@ -65,10 +75,10 @@ public class Main {
     }
 
     public void updateGrid() {
-        boolean[][] newGrid = new boolean[size][size];
+        boolean[][] newGrid = new boolean[rows][cols];
 
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
                 int neighbors = countNeighbors(i, j);
                 newGrid[i][j] = (grid[i][j] && (neighbors == 2 || neighbors == 3)) || (!grid[i][j] && neighbors == 3);
             }
@@ -80,7 +90,7 @@ public class Main {
         for (int i = 0; i < generations; i++) {
             printGrid();
             updateGrid();
-            Thread.sleep(300); // Krótsze opóźnienie dla płynniejszej animacji
+            Thread.sleep(300); // Shorter delay for smoother animation
         }
     }
 
@@ -90,11 +100,10 @@ public class Main {
 
             if (os.contains("win")) {
                 new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
-            } else if (System.console() != null) { // Sprawdza, czy działa w prawdziwym terminalu
-                System.out.print("\033[H\033[2J"); // ANSI escape code dla Linux/Mac
+            } else if (System.console() != null) {
+                System.out.print("\033[H\033[2J"); // ANSI escape code for Linux/Mac
                 System.out.flush();
             } else {
-                // W IntelliJ IDEA i innych IDE po prostu wypisuje 50 pustych linii
                 for (int i = 0; i < 50; i++) {
                     System.out.println();
                 }
@@ -104,17 +113,12 @@ public class Main {
         }
     }
 
-
     public static void main(String[] args) throws InterruptedException {
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("Hello and welcome!");
 
-        System.out.print("Enter size: ");
-        int size = scanner.nextInt();
-        scanner.nextLine(); // Consume leftover newline
-
-        Main game = new Main(size);
+        Main game = new Main();
 
         System.out.print("Enter absolute path to map file: ");
         String filePath = scanner.nextLine().trim();
